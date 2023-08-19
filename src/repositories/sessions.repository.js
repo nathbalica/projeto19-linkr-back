@@ -1,14 +1,13 @@
 import { db } from "../database/database.connection.js";
 
 export function createSessionDB(userId, token) {
-
     const result = db.query(
-        `INSERT INTO sessions ("userId", token) VALUES ($1, $2);`,
+        `INSERT INTO sessions (user_id, token) VALUES ($1, $2);`,
         [userId, token]
-    )
-    return result
+    );
+    return result;
 }
 
 export function findSessionDB(token) {
-    return db.query(`SELECT "userId" FROM sessions WHERE token=$1;`, [token])
+    return db.query(`SELECT user_id FROM sessions WHERE token=$1;`, [token]);
 }
