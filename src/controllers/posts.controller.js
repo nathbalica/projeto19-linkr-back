@@ -5,7 +5,7 @@ import {
 import {
     addPost,
     editPost,
-    removePost,
+    removePost
 } from "../repositories/posts.repository.js";
 
 import { db } from "../database/database.connection.js";
@@ -17,20 +17,8 @@ export async function publish(req, res) {
         const post_id = await addPost(user_id, content, link);
         const hashtags = content.match(/#\w+/g);
         if (hashtags) {
-            for (const hashtag of hashtags) {
-                const normalized = hashtag.toLowerCase();
-                const exists = await db.query(
-                    `SELECT id FROM hashtags WHERE name = $1`,
-                    [normalized]
-                );
-                let hashtag_id;
-                if (exists.rows.length === 0) {
-                    hashtag_id = await createHashtag(normalized);
-                } else {
-                    hashtag_id = exists.rows[0].id;
-                }
-                await addPostHashtags(post_id, hashtag_id);
-            }
+            const hashtagIds = await processHashtags(hashtags);
+            await addPostHashtags(post_id, hashtagIds);
         }
         return res.sendStatus(201);
     } catch (error) {
@@ -39,7 +27,31 @@ export async function publish(req, res) {
     }
 }
 
-export async function edit(req, res) {
+async function processHashtags(hashtags) {
+    const normalizedHashtags = hashtags.map(hashtag => hashtag.toLowerCase());
+    const existingHashtags = await getExistingHashtags(normalizedHashtags);
+    const newHashtags = await createNonExistingHashtags(normalizedHashtags, existingHashtags);
+    return [...existingHashtags, ...newHashtags];
+}
+
+async function getExistingHashtags(hashtags) {
+    const query = `SELECT id, name FROM hashtags WHERE name IN ($1)`;
+    const result = await db.query(query, [hashtags]);
+    return result.rows.map(row => row.id);
+}
+
+async function createNonExistingHashtags(hashtags, existingHashtags) {
+    const nonExistingHashtags = hashtags.filter(hashtag => !existingHashtags.includes(hashtag));
+    const newHashtagIds = [];
+    for (const hashtag of nonExistingHashtags) {
+        const hashtagId = await createHashtag(hashtag);
+        newHashtagIds.push(hashtagId);
+    }
+    return newHashtagIds;
+}
+
+
+export async function editPostController(req, res) {
     const { user_id } = res.locals;
     const { post_id } = req.params;
     const { content, link } = req.body;
@@ -53,7 +65,7 @@ export async function edit(req, res) {
     }
 }
 
-export async function remove(req, res) {
+export async function removePostController(req, res) {
     const { user_id } = res.locals;
     const { post_id } = req.params;
 

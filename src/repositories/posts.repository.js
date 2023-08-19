@@ -1,5 +1,6 @@
 import { db } from "../database/database.connection.js";
 
+
 export async function addPost(user_id, content, link) {
     try {
         const query = `INSERT INTO posts (user_id, content, link) VALUES ($1, $2, $3) RETURNING id`;
@@ -29,7 +30,6 @@ export async function removePost(user_id, post_id) {
         const query = `DELETE FROM posts WHERE id = $1 AND user_id = $2`;
         const result = await db.query(query, [post_id, user_id]);
         if (result.rowCount === 0) {
-            console.log(user_id, post_id);
             throw new Error(
                 "Post não encontrado ou você não tem permissão para deletá-lo."
             );
