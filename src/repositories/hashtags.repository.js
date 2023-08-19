@@ -2,12 +2,12 @@ import { db } from "../database/database.connection.js";
 
 export async function createHashtag(name) {
     try {
-        const query = `INSERT INTO hashtags (name) VALUES $1 RETURNING id`;
+        const query = `INSERT INTO hashtags (name) VALUES ($1) RETURNING id`;
         const result = await db.query(query, [name]);
         return result.rows[0].id;
     } catch (error) {
         console.error("Erro ao criar hashtag:", error);
-        return res.sendStatus(500);
+        throw error;
     }
 }
 
@@ -17,6 +17,6 @@ export async function addPostHashtags(post_id, hashtag_id) {
         await db.query(query, [post_id, hashtag_id]);
     } catch (error) {
         console.error("Erro ao adicionar hashtags de um post:", error);
-        return res.sendStatus(500);
+        throw error;
     }
 }

@@ -8,6 +8,8 @@ import {
     removePost,
 } from "../repositories/posts.repository.js";
 
+import { db } from "../database/database.connection.js";
+
 export async function publish(req, res) {
     const { user_id } = res.locals;
     const { content, link } = req.body;
@@ -15,7 +17,7 @@ export async function publish(req, res) {
         const post_id = await addPost(user_id, content, link);
         const hashtags = content.match(/#\w+/g);
         if (hashtags) {
-            hashtags.forEach(async (hashtag) => {
+            for (const hashtag of hashtags) {
                 const normalized = hashtag.toLowerCase();
                 const exists = await db.query(
                     `SELECT id FROM hashtags WHERE name = $1`,
@@ -28,7 +30,7 @@ export async function publish(req, res) {
                     hashtag_id = exists.rows[0].id;
                 }
                 await addPostHashtags(post_id, hashtag_id);
-            });
+            }
         }
         return res.sendStatus(201);
     } catch (error) {
