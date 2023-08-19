@@ -12,6 +12,6 @@ postsRouter.post(
     publish
 );
 postsRouter.put("/edit/:post_id", validateAuth, edit);
-postsRouter.delete("/delete/:post_id", validateAuth, remove);
+postsRouter.delete("/remove/:post_id", validateAuth, remove);
 
 export default postsRouter;

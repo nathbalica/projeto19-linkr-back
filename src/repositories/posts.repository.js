@@ -24,11 +24,12 @@ export async function editPost(user_id, content, link, post_id) {
     }
 }
 
-export async function removePost(post_id) {
+export async function removePost(user_id, post_id) {
     try {
         const query = `DELETE FROM posts WHERE id = $1 AND user_id = $2`;
-        await db.query(query, [post_id, user_id]);
+        const result = await db.query(query, [post_id, user_id]);
         if (result.rowCount === 0) {
+            console.log(user_id, post_id);
             throw new Error(
                 "Post não encontrado ou você não tem permissão para deletá-lo."
             );
