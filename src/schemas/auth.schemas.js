@@ -8,10 +8,6 @@ export const signupSchema = Joi.object({
     'string.max': 'Username cannot be longer than {#limit} characters',
     'string.alphanum': 'Username must only contain alphanumeric characters',
   }),
-  name: Joi.string().required().messages({
-    'any.required': 'Name is required',
-    'string.empty': 'Name cannot be empty',
-  }),
   email: Joi.string().email().required().messages({
     'any.required': 'Email is required',
     'string.empty': 'Email cannot be empty',
@@ -21,10 +17,6 @@ export const signupSchema = Joi.object({
     'any.required': 'Password is required',
     'string.empty': 'Password cannot be empty',
     'string.min': 'Password must be at least {#limit} characters long',
-  }),
-  confirmPassword: Joi.string().valid(Joi.ref('password')).required().messages({
-    'any.required': 'Confirm password is required',
-    'any.only': 'Passwords do not match',
   }),
   profile_image: Joi.string().uri().allow(null).optional().messages({
     'string.uri': 'Invalid URL format',

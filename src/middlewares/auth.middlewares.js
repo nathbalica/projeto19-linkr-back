@@ -1,6 +1,9 @@
 import jwt from 'jsonwebtoken';
+import dotenv from "dotenv"
 
-const JWT_SECRET = 'suaChaveSecretaAqui';
+dotenv.config()
+
+const JWT_SECRET = process.env.JWT_SECRET;
 
 export async function validateAuth(req, res, next) {
   const { authorization } = req.headers;
