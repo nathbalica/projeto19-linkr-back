@@ -16,9 +16,10 @@ import { db } from "../database/database.connection.js";
 
 export async function getUserById(req, res) {
     const { user_id } = req.params;
+    const user_requesting = res.locals.user_id;
     try {
         const user = await getUserData(user_id);
-        const posts = await getUserPosts(user_id);
+        const posts = await getUserPosts(user_id, user_requesting);
         const responseObj = {
             ...user,
             posts,
@@ -49,10 +50,6 @@ export async function getTimeline(req, res) {
                 users u ON p.user_id = u.id
             LEFT JOIN
                 likes l ON p.id = l.post_id
-            WHERE
-                p.user_id IN (
-                    SELECT following_id FROM user_following WHERE follower_id = $1
-                )
             GROUP BY
                 p.id, u.username, u.profile_image, l.user_id
             ORDER BY

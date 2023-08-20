@@ -88,7 +88,6 @@ export async function removePostController(req, res) {
 export async function likeController(req, res) {
     const { user_id } = res.locals;
     const { post_id } = req.params;
-
     try {
         const isLiked = await checkIfLiked(user_id, post_id);
         if (!isLiked) {
