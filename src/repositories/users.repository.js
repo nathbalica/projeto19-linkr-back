@@ -32,6 +32,7 @@ export async function getUserData(user_id) {
 export async function getUserPosts(user_id) {
     const query = `
         SELECT
+            p.id,
             p.content,
             p.link,
             p.created_at,

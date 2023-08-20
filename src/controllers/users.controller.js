@@ -35,6 +35,7 @@ export async function getTimeline(req, res) {
     try {
         const query = `
             SELECT
+                p.id,
                 p.content,
                 p.link,
                 p.created_at,
