@@ -39,6 +39,13 @@ export async function removePost(user_id, post_id) {
 }
 
 export async function checkIfLiked(user_id, post_id) {
+    const search = `
+            SELECT id FROM posts WHERE id = $1
+        `;
+    const exists = await db.query(search, [post_id]);
+    if (exists.rows.length === 0) {
+        throw new Error("Post não encontrado.");
+    }
     const query = `
         SELECT EXISTS (
             SELECT 1
@@ -57,9 +64,6 @@ export async function addLike(user_id, post_id) {
             VALUES ($1, $2)
         `;
         const result = await db.query(query, [user_id, post_id]);
-        if (result.rowCount === 0) {
-            throw new Error("Post não encontrado ou você não pode curti-lo.");
-        }
     } catch (error) {
         throw error;
     }
