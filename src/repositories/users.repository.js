@@ -29,30 +29,31 @@ export async function getUserData(user_id) {
     return result.rows[0];
 }
 
-export async function getUserPosts(user_id) {
+export async function getUserPosts(user_id, user_requesting) {
     const query = `
         SELECT
+            p.id,
             p.content,
             p.link,
             p.created_at,
             u.username,
             u.profile_image,
-            COALESCE(SUM(CASE WHEN l.user_id = $1 THEN 1 ELSE 0 END), 0) AS like_count,
-            CASE WHEN l.user_id = $1 THEN true ELSE false END AS liked
+            (
+                SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id
+            ) AS like_count,
+            CASE WHEN EXISTS (
+                SELECT 1 FROM likes l WHERE l.user_id = $1 AND l.post_id = p.id
+            ) THEN true ELSE false END AS liked
         FROM
             posts p
         JOIN
             users u ON p.user_id = u.id
-        LEFT JOIN
-            likes l ON p.id = l.post_id
         WHERE
-            p.user_id = $1
-        GROUP BY
-            p.id, u.username, u.profile_image, l.user_id
+            p.user_id = $2
         ORDER BY
             p.created_at DESC;
     `;
-    const result = await db.query(query, [user_id]);
+    const result = await db.query(query, [user_requesting, user_id]);
     return result.rows;
 }
 

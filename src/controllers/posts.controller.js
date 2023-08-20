@@ -5,7 +5,10 @@ import {
 import {
     addPost,
     editPost,
-    removePost
+    removePost,
+    addLike,
+    removeLike,
+    checkIfLiked,
 } from "../repositories/posts.repository.js";
 
 import { db } from "../database/database.connection.js";
@@ -28,20 +31,25 @@ export async function publish(req, res) {
 }
 
 async function processHashtags(hashtags) {
-    const normalizedHashtags = hashtags.map(hashtag => hashtag.toLowerCase());
+    const normalizedHashtags = hashtags.map((hashtag) => hashtag.toLowerCase());
     const existingHashtags = await getExistingHashtags(normalizedHashtags);
-    const newHashtags = await createNonExistingHashtags(normalizedHashtags, existingHashtags);
+    const newHashtags = await createNonExistingHashtags(
+        normalizedHashtags,
+        existingHashtags
+    );
     return [...existingHashtags, ...newHashtags];
 }
 
 async function getExistingHashtags(hashtags) {
     const query = `SELECT id, name FROM hashtags WHERE name IN ($1)`;
     const result = await db.query(query, [hashtags]);
-    return result.rows.map(row => row.id);
+    return result.rows.map((row) => row.id);
 }
 
 async function createNonExistingHashtags(hashtags, existingHashtags) {
-    const nonExistingHashtags = hashtags.filter(hashtag => !existingHashtags.includes(hashtag));
+    const nonExistingHashtags = hashtags.filter(
+        (hashtag) => !existingHashtags.includes(hashtag)
+    );
     const newHashtagIds = [];
     for (const hashtag of nonExistingHashtags) {
         const hashtagId = await createHashtag(hashtag);
@@ -49,7 +57,6 @@ async function createNonExistingHashtags(hashtags, existingHashtags) {
     }
     return newHashtagIds;
 }
-
 
 export async function editPostController(req, res) {
     const { user_id } = res.locals;
@@ -71,6 +78,41 @@ export async function removePostController(req, res) {
 
     try {
         await removePost(user_id, post_id);
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Erro ao editar post:", error);
+        res.sendStatus(500);
+    }
+}
+
+export async function likeController(req, res) {
+    const { user_id } = res.locals;
+    const { post_id } = req.params;
+    try {
+        const isLiked = await checkIfLiked(user_id, post_id);
+        if (!isLiked) {
+            await addLike(user_id, post_id);
+        } else {
+            return res.status(409).send("Post já foi curtido.");
+        }
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Erro ao editar post:", error);
+        res.sendStatus(500);
+    }
+}
+
+export async function dislikeController(req, res) {
+    const { user_id } = res.locals;
+    const { post_id } = req.params;
+
+    try {
+        const isLiked = await checkIfLiked(user_id, post_id);
+        if (isLiked) {
+            await removeLike(user_id, post_id);
+        } else {
+            return res.status(409).send("Post não está curtido.");
+        }
         res.sendStatus(200);
     } catch (error) {
         console.error("Erro ao editar post:", error);

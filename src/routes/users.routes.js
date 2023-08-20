@@ -4,7 +4,7 @@ import { getTimeline, getUserById } from "../controllers/users.controller.js";
 
 const usersRouter = Router();
 
-usersRouter.get("/user/:user_id", getUserById);
+usersRouter.get("/user/:user_id", validateAuth, getUserById);
 usersRouter.get("/timeline", validateAuth, getTimeline);
 
 export default usersRouter;
