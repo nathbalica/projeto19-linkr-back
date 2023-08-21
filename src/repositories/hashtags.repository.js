@@ -6,7 +6,7 @@ export async function createHashtag(name) {
         const result = await db.query(query, [name]);
         return result.rows[0].id;
     } catch (error) {
-        console.error("Erro ao criar hashtag:", error);
+        console.error("Error creating hashtag:", error);
         throw error;
     }
 }
@@ -42,9 +42,7 @@ export async function getTrendingHashtags() {
 
 export async function addPostHashtags(post_id, hashtag_ids) {
     try {
-        const values = hashtag_ids
-            .map((hashtag_id) => `(${post_id}, ${hashtag_id})`)
-            .join(",");
+        const values = hashtag_ids.map(hashtag_id => `(${post_id}, ${hashtag_id})`).join(",");
         const query = `INSERT INTO post_hashtags (post_id, hashtag_id) VALUES ${values}`;
         await db.query(query);
     } catch (error) {

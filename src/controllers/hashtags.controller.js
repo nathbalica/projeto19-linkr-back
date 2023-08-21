@@ -3,7 +3,7 @@ import {
     getHashtagIdByName,
     getTrendingHashtags,
     addPostHashtags,
-    getPostsByHashtag,
+    getPostsByHashtag
 } from "../repositories/hashtags.repository.js";
 
 export async function createPostHashtags(post_id, hashtags) {

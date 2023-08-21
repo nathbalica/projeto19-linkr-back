@@ -1,8 +1,4 @@
 import {
-    createHashtag,
-    addPostHashtags,
-} from "../repositories/hashtags.repository.js";
-import {
     addPost,
     editPost,
     removePost,
@@ -21,12 +17,13 @@ export async function publish(req, res) {
         if (hashtags) {
             await createPostHashtags(post_id, hashtags);
         }
-        return res.sendStatus(201);
+        res.sendStatus(201);
     } catch (error) {
-        console.error("Erro ao publicar post:", error);
+        console.error("Error publishing post:", error);
         res.sendStatus(500);
     }
 }
+
 
 export async function editPostController(req, res) {
     const { user_id } = res.locals;
