@@ -88,3 +88,14 @@ export async function removeLike(user_id, post_id) {
         throw error;
     }
 }
+
+export async function removeHashtags(post_id) {
+    try {
+        const query = `DELETE FROM post_hashtags WHERE post_id = $1`;
+        const result = await db.query(query, [post_id]);
+        return result;
+    } catch (error) {
+        console.error("Error deleting hashtags of the post:", error);
+        throw error;
+    }
+}
