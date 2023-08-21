@@ -40,10 +40,12 @@ export async function getTimeline(req, res) {
                 p.content,
                 p.link,
                 p.created_at,
+                p.user_id,
                 u.username,
                 u.profile_image,
                 COALESCE(SUM(CASE WHEN l.user_id = $1 THEN 1 ELSE 0 END), 0) AS like_count,
-                CASE WHEN l.user_id = $1 THEN true ELSE false END AS liked
+                CASE WHEN l.user_id = $1 THEN true ELSE false END AS liked,
+                CASE WHEN p.user_id = $1 THEN true ELSE false END AS owned
             FROM
                 posts p
             JOIN
@@ -51,7 +53,7 @@ export async function getTimeline(req, res) {
             LEFT JOIN
                 likes l ON p.id = l.post_id
             GROUP BY
-                p.id, u.username, u.profile_image, l.user_id
+                p.id, p.user_id, u.username, u.profile_image, l.user_id
             ORDER BY
                 p.created_at DESC;
         `;

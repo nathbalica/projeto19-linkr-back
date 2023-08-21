@@ -48,8 +48,11 @@ export async function signIn(req, res) {
             secure: true,
             sameSite: "strict",
         });
-
-        res.status(200).send({ token: token });
+        console.log(user.rows[0].profile_image);
+        res.status(200).send({
+            token: token,
+            profile_image: user.rows[0].profile_image,
+        });
     } catch (err) {
         res.status(500).send(err.message);
     }
