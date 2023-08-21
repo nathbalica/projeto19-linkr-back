@@ -60,3 +60,17 @@ export async function getUserPosts(user_id, user_requesting) {
 }
 
 export async function getTimeline(user_id) {}
+
+
+export async function searchUsers(query) {
+    try {
+        const result = await db.query(
+            'SELECT id, username, profile_image FROM users WHERE username ILIKE $1',
+            [`%${query}%`]
+        );
+        return result.rows;
+    } catch (error) {
+        console.error('Error searching users:', error);
+        throw error;
+    }
+}

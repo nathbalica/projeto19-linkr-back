@@ -54,12 +54,13 @@ export async function addPostHashtags(post_id, hashtag_ids) {
 export async function getPostsByHashtag(hashtag) {
     try {
         const query = `
-            SELECT posts.*
-            FROM posts
-            JOIN post_hashtags ON posts.id = post_hashtags.post_id
-            JOIN hashtags ON post_hashtags.hashtag_id = hashtags.id
-            WHERE hashtags.name = $1
-            ORDER BY posts.created_at DESC
+        SELECT posts.*, users.username, users.profile_image
+        FROM posts
+        JOIN post_hashtags ON posts.id = post_hashtags.post_id
+        JOIN hashtags ON post_hashtags.hashtag_id = hashtags.id
+        JOIN users ON posts.user_id = users.id
+        WHERE hashtags.name = $1
+        ORDER BY posts.created_at DESC
         `;
 
         // Add the "#" symbol to the hashtag before querying
