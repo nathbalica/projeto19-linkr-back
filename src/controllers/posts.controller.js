@@ -5,6 +5,7 @@ import {
     addLike,
     removeLike,
     checkIfLiked,
+    removeHashtags,
 } from "../repositories/posts.repository.js";
 import { createPostHashtags } from "./hashtags.controller.js";
 
@@ -24,13 +25,17 @@ export async function publish(req, res) {
     }
 }
 
-
 export async function editPostController(req, res) {
     const { user_id } = res.locals;
     const { post_id } = req.params;
     const { content } = req.body;
 
     try {
+        await removeHashtags(post_id);
+        const hashtags = content.match(/#\w+/g);
+        if (hashtags) {
+            await createPostHashtags(post_id, hashtags);
+        }
         await editPost(user_id, content, post_id);
         res.sendStatus(200);
     } catch (error) {
@@ -44,6 +49,7 @@ export async function removePostController(req, res) {
     const { post_id } = req.params;
 
     try {
+        await removeHashtags(post_id);
         await removePost(user_id, post_id);
         res.sendStatus(200);
     } catch (error) {
