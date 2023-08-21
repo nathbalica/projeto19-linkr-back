@@ -36,6 +36,7 @@ export async function getUserPosts(user_id, user_requesting) {
             p.content,
             p.link,
             p.created_at,
+            u.id,
             u.username,
             u.profile_image,
             (
@@ -43,7 +44,8 @@ export async function getUserPosts(user_id, user_requesting) {
             ) AS like_count,
             CASE WHEN EXISTS (
                 SELECT 1 FROM likes l WHERE l.user_id = $1 AND l.post_id = p.id
-            ) THEN true ELSE false END AS liked
+            ) THEN true ELSE false END AS liked,
+            CASE WHEN p.user_id = $1 THEN true ELSE false END AS owned
         FROM
             posts p
         JOIN

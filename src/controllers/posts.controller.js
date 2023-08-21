@@ -61,10 +61,10 @@ async function createNonExistingHashtags(hashtags, existingHashtags) {
 export async function editPostController(req, res) {
     const { user_id } = res.locals;
     const { post_id } = req.params;
-    const { content, link } = req.body;
+    const { content } = req.body;
 
     try {
-        await editPost(user_id, content, link, post_id);
+        await editPost(user_id, content, post_id);
         res.sendStatus(200);
     } catch (error) {
         console.error("Erro ao editar post:", error);
