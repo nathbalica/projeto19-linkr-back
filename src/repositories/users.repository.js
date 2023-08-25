@@ -36,22 +36,28 @@ export async function getUserPosts(user_id, user_requesting) {
             p.content,
             p.link,
             p.created_at,
-            u.id,
+            u.id AS user_id,
             u.username,
             u.profile_image,
-            (
-                SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id
-            ) AS like_count,
-            CASE WHEN EXISTS (
-                SELECT 1 FROM likes l WHERE l.user_id = $1 AND l.post_id = p.id
-            ) THEN true ELSE false END AS liked,
-            CASE WHEN p.user_id = $1 THEN true ELSE false END AS owned
+            COALESCE(SUM(CASE WHEN l.user_id = $1 THEN 1 ELSE 0 END), 0) AS like_count,
+            CASE WHEN l.user_id = $1 THEN true ELSE false END AS liked,
+            CASE WHEN p.user_id = $1 THEN true ELSE false END AS owned,
+            COALESCE(c.comments_count, 0) as comments_count
         FROM
             posts p
         JOIN
             users u ON p.user_id = u.id
+        LEFT JOIN
+            likes l ON p.id = l.post_id
+        LEFT JOIN (
+            SELECT post_id, COUNT(*) AS comments_count
+            FROM comments
+            GROUP BY post_id
+        ) c ON p.id = c.post_id
         WHERE
             p.user_id = $2
+        GROUP BY
+            p.id, p.user_id, u.id, u.username, u.profile_image, l.user_id, c.comments_count
         ORDER BY
             p.created_at DESC;
     `;
@@ -59,18 +65,55 @@ export async function getUserPosts(user_id, user_requesting) {
     return result.rows;
 }
 
-export async function getTimeline(user_id) {}
-
+export async function getTimelineDB(user_id, limit) {
+    try {
+        const query = `
+            SELECT
+                p.id,
+                p.content,
+                p.link,
+                p.created_at,
+                u.id AS user_id,
+                u.username,
+                u.profile_image,
+                COALESCE(SUM(CASE WHEN l.user_id = $1 THEN 1 ELSE 0 END), 0) AS like_count,
+                CASE WHEN l.user_id = $1 THEN true ELSE false END AS liked,
+                CASE WHEN p.user_id = $1 THEN true ELSE false END AS owned,
+                COALESCE(c.comments_count, 0) as comments_count
+            FROM
+                posts p
+            JOIN
+                users u ON p.user_id = u.id
+            LEFT JOIN
+                likes l ON p.id = l.post_id
+            LEFT JOIN (
+                SELECT post_id, COUNT(*) AS comments_count
+                FROM comments
+                GROUP BY post_id
+            ) c ON p.id = c.post_id
+            GROUP BY
+                p.id, p.user_id, u.id, u.username, u.profile_image, l.user_id, c.comments_count
+            ORDER BY
+                p.created_at DESC
+            LIMIT $2;
+        `;
+        const result = await db.query(query, [user_id, limit]);
+        return result.rows;
+    } catch (error) {
+        console.error("Error fetching timeline:", error);
+        throw error;
+    }
+}
 
 export async function searchUsers(query) {
     try {
         const result = await db.query(
-            'SELECT id, username, profile_image FROM users WHERE username ILIKE $1',
+            "SELECT id, username, profile_image FROM users WHERE username ILIKE $1",
             [`%${query}%`]
         );
         return result.rows;
     } catch (error) {
-        console.error('Error searching users:', error);
+        console.error("Error searching users:", error);
         throw error;
     }
 }
