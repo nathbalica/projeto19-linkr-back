@@ -47,16 +47,18 @@ export async function getUserPosts(user_id, user_requesting) {
         FALSE AS repost,
         NULL AS repost_by_me,
         NULL AS reposter_username
-        FROM
-            posts p
-        JOIN
-            users u ON p.user_id = u.id
-        LEFT JOIN
-            likes l ON p.id = l.post_id
-        LEFT JOIN
-            comments c ON p.id = c.post_id
-        LEFT JOIN
-            reposts r ON p.id = r.post_id
+    FROM
+        posts p
+    JOIN
+        users u ON p.user_id = u.id
+    LEFT JOIN
+        likes l ON p.id = l.post_id
+    LEFT JOIN
+        comments c ON p.id = c.post_id
+    LEFT JOIN
+        reposts r ON p.id = r.post_id
+    WHERE
+        p.user_id = $2
     GROUP BY
         p.id, u.id
     ORDER BY
@@ -93,8 +95,10 @@ export async function getUserPosts(user_id, user_requesting) {
         comments c ON p.id = c.post_id
     LEFT JOIN
         users rp ON r.user_id = rp.id
+    WHERE
+        r.user_id = $2
     GROUP BY
-        p.id, u.id, rp.username, r.created_at
+        p.id, u.id, rp.username, r.created_at, r.user_id
     ORDER BY
         created_at DESC
     `;
@@ -104,7 +108,7 @@ export async function getUserPosts(user_id, user_requesting) {
     return result;
 }
 
-export async function getTimelineDB(user_id, limit) {
+export async function getTimelineDB(user_id) {
     try {
         const postsQuery = `
         SELECT
@@ -123,16 +127,20 @@ export async function getTimelineDB(user_id, limit) {
             FALSE AS repost,
             NULL AS repost_by_me,
             NULL AS reposter_username
-            FROM
-                posts p
-            JOIN
-                users u ON p.user_id = u.id
-            LEFT JOIN
-                likes l ON p.id = l.post_id
-            LEFT JOIN
-                comments c ON p.id = c.post_id
-            LEFT JOIN
-                reposts r ON p.id = r.post_id
+        FROM
+            posts p
+        JOIN
+            users u ON p.user_id = u.id
+        LEFT JOIN
+            likes l ON p.id = l.post_id
+        LEFT JOIN
+            comments c ON p.id = c.post_id
+        LEFT JOIN
+            reposts r ON p.id = r.post_id
+        WHERE
+            p.user_id IN (
+                SELECT following_id FROM user_following WHERE follower_id = $1
+            )
         GROUP BY
             p.id, u.id
         ORDER BY
@@ -169,6 +177,10 @@ export async function getTimelineDB(user_id, limit) {
             comments c ON p.id = c.post_id
         LEFT JOIN
             users rp ON r.user_id = rp.id
+        WHERE
+            r.user_id IN (
+                SELECT following_id FROM user_following WHERE follower_id = $1
+            )
         GROUP BY
             p.id, u.id, rp.username, r.created_at, r.user_id
         ORDER BY
