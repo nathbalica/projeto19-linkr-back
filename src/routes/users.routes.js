@@ -7,6 +7,6 @@ const usersRouter = Router();
 
 usersRouter.get("/user/:user_id", validateAuth, getUserById);
 usersRouter.get("/search", searchUsersController);
-usersRouter.get("/timeline", validateAuth, getTimeline);
+usersRouter.get("/timeline/:page", validateAuth, getTimeline);
 
 export default usersRouter;
