@@ -52,6 +52,7 @@ export async function signIn(req, res) {
         res.status(200).send({
             token: token,
             profile_image: user.rows[0].profile_image,
+            id: user.rows[0].id
         });
     } catch (err) {
         res.status(500).send(err.message);
