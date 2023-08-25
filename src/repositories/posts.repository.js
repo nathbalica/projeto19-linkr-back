@@ -71,6 +71,7 @@ export async function addLike(user_id, post_id) {
             VALUES ($1, $2)
         `;
         await db.query(query, [user_id, post_id]);
+        return getLikeCount(post_id);
     } catch (error) {
         throw error;
     }
@@ -85,6 +86,21 @@ export async function removeLike(user_id, post_id) {
                 "Post não encontrado ou você não pode descurti-lo."
             );
         }
+        return getLikeCount(post_id);
+    } catch (error) {
+        throw error;
+    }
+}
+
+async function getLikeCount(post_id) {
+    try {
+        const query = `
+            SELECT COUNT(*) AS like_count
+            FROM likes
+            WHERE post_id = $1;
+        `
+        const result = await db.query(query, [post_id]);
+        return result.rows[0].like_count;
     } catch (error) {
         throw error;
     }

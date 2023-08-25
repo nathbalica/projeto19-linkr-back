@@ -65,11 +65,11 @@ export async function likeController(req, res) {
     try {
         const isLiked = await checkIfLiked(user_id, post_id);
         if (!isLiked) {
-            await addLike(user_id, post_id);
+            const result = await addLike(user_id, post_id);
+            res.status(200).send(result);
         } else {
             return res.status(409).send("Post já foi curtido.");
         }
-        res.sendStatus(200);
     } catch (error) {
         console.error("Erro ao editar post:", error);
         res.sendStatus(500);
@@ -83,11 +83,11 @@ export async function dislikeController(req, res) {
     try {
         const isLiked = await checkIfLiked(user_id, post_id);
         if (isLiked) {
-            await removeLike(user_id, post_id);
+            const result = await removeLike(user_id, post_id);
+            res.status(200).send(result);
         } else {
             return res.status(409).send("Post não está curtido.");
         }
-        res.sendStatus(200);
     } catch (error) {
         console.error("Erro ao editar post:", error);
         res.sendStatus(500);
