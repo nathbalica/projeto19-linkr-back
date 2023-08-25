@@ -48,4 +48,3 @@ export async function isFollowing(req, res) {
         res.sendStatus(500);
     }
 }
-

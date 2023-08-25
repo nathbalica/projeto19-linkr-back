@@ -13,7 +13,6 @@ router.use(postsRouter);
 router.use(userRouter);
 router.use(hashtagsRouter);
 router.use(followRouter);
-
 router.use(commentsRouter);
 
 export default router;

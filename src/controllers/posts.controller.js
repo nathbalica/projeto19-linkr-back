@@ -6,6 +6,7 @@ import {
     removeLike,
     checkIfLiked,
     removeHashtags,
+    sharePost
 } from "../repositories/posts.repository.js";
 import { createPostHashtags } from "./hashtags.controller.js";
 
@@ -64,11 +65,11 @@ export async function likeController(req, res) {
     try {
         const isLiked = await checkIfLiked(user_id, post_id);
         if (!isLiked) {
-            await addLike(user_id, post_id);
+            const result = await addLike(user_id, post_id);
+            res.status(200).send(result);
         } else {
             return res.status(409).send("Post já foi curtido.");
         }
-        res.sendStatus(200);
     } catch (error) {
         console.error("Erro ao editar post:", error);
         res.sendStatus(500);
@@ -82,10 +83,23 @@ export async function dislikeController(req, res) {
     try {
         const isLiked = await checkIfLiked(user_id, post_id);
         if (isLiked) {
-            await removeLike(user_id, post_id);
+            const result = await removeLike(user_id, post_id);
+            res.status(200).send(result);
         } else {
             return res.status(409).send("Post não está curtido.");
         }
+    } catch (error) {
+        console.error("Erro ao editar post:", error);
+        res.sendStatus(500);
+    }
+}
+
+export async function sharePostController(req, res) {
+    const { user_id } = res.locals;
+    const { post_id } = req.params;
+
+    try {
+        await sharePost(user_id, post_id);
         res.sendStatus(200);
     } catch (error) {
         console.error("Erro ao editar post:", error);

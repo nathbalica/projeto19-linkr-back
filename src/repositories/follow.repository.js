@@ -37,4 +37,3 @@ export async function isUserFollowingDB(follower_id, following_id) {
         throw error;
     }
 }
-

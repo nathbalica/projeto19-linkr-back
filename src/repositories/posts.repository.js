@@ -35,7 +35,8 @@ export async function removePost(user_id, post_id) {
         } else {
             const likesQuery = `DELETE FROM likes WHERE post_id = $1`;
             await db.query(likesQuery, [post_id]);
-
+            const repostQuery = `DELETE FROM reposts WHERE post_id = $1`;
+            await db.query(repostQuery, [post_id]);
             const postQuery = `DELETE FROM posts WHERE id = $1`;
             await db.query(postQuery, [post_id]);
         }
@@ -69,7 +70,8 @@ export async function addLike(user_id, post_id) {
             INSERT INTO likes (user_id, post_id)
             VALUES ($1, $2)
         `;
-        const result = await db.query(query, [user_id, post_id]);
+        await db.query(query, [user_id, post_id]);
+        return getLikeCount(post_id);
     } catch (error) {
         throw error;
     }
@@ -84,6 +86,21 @@ export async function removeLike(user_id, post_id) {
                 "Post não encontrado ou você não pode descurti-lo."
             );
         }
+        return getLikeCount(post_id);
+    } catch (error) {
+        throw error;
+    }
+}
+
+async function getLikeCount(post_id) {
+    try {
+        const query = `
+            SELECT COUNT(*) AS like_count
+            FROM likes
+            WHERE post_id = $1;
+        `
+        const result = await db.query(query, [post_id]);
+        return result.rows[0].like_count;
     } catch (error) {
         throw error;
     }
@@ -96,6 +113,31 @@ export async function removeHashtags(post_id) {
         return result;
     } catch (error) {
         console.error("Error deleting hashtags of the post:", error);
+        throw error;
+    }
+}
+
+export async function sharePost(user_id, post_id) {
+    try {
+        const check = `
+            SELECT 1
+            FROM reposts
+            WHERE user_id = $1 AND post_id = $2
+        `
+        const exists = await db.query(check, [user_id, post_id]);
+        
+        if (exists.rows.length > 0) {
+            return null;
+        }
+
+        const query = `
+            INSERT INTO reposts (user_id, post_id)
+            VALUES ($1, $2)
+            RETURNING created_at;
+        `;
+        const result = await db.query(query, [user_id, post_id]);
+        return result.rows[0];
+    } catch (error) {
         throw error;
     }
 }
