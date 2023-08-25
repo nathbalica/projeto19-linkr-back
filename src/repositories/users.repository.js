@@ -30,7 +30,83 @@ export async function getUserData(user_id) {
 }
 
 export async function getUserPosts(user_id, user_requesting) {
-    const query = `
+    const postsQuery = `
+    SELECT
+        p.id,
+        p.content,
+        p.link,
+        p.created_at,
+        u.id AS user_id,
+        u.username,
+        u.profile_image,
+        (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
+        EXISTS (SELECT 1 FROM likes WHERE post_id = p.id AND user_id = $1) AS liked,
+        p.user_id = $1 AS owned,
+        (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comments_count,
+        (SELECT COUNT(*) FROM reposts r WHERE r.post_id = p.id) AS repost_count,
+        FALSE AS repost,
+        NULL AS repost_by_me,
+        NULL AS reposter_username
+        FROM
+            posts p
+        JOIN
+            users u ON p.user_id = u.id
+        LEFT JOIN
+            likes l ON p.id = l.post_id
+        LEFT JOIN
+            comments c ON p.id = c.post_id
+        LEFT JOIN
+            reposts r ON p.id = r.post_id
+    GROUP BY
+        p.id, u.id
+    ORDER BY
+        p.created_at DESC
+    `;
+    const posts = await db.query(postsQuery, [user_requesting, user_id]);
+
+    const repostsQuery = `
+    SELECT
+        p.id,
+        p.content,
+        p.link,
+        COALESCE(r.created_at, p.created_at) AS created_at,
+        u.id AS user_id,
+        u.username,
+        u.profile_image,
+        (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
+        EXISTS (SELECT 1 FROM likes WHERE post_id = p.id AND user_id = $1) AS liked,
+        p.user_id = $1 AS owned,
+        (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comments_count,
+        (SELECT COUNT(*) FROM reposts r WHERE r.post_id = p.id) AS repost_count,
+        TRUE AS repost,
+        CASE WHEN r.user_id = $1 THEN true ELSE false END AS repost_by_me,
+        rp.username AS reposter_username
+    FROM
+        posts p
+    JOIN
+        reposts r ON p.id = r.post_id
+    JOIN
+        users u ON p.user_id = u.id
+    LEFT JOIN
+        likes l ON p.id = l.post_id
+    LEFT JOIN
+        comments c ON p.id = c.post_id
+    LEFT JOIN
+        users rp ON r.user_id = rp.id
+    GROUP BY
+        p.id, u.id, rp.username, r.created_at
+    ORDER BY
+        created_at DESC
+    `;
+    const reposts = await db.query(repostsQuery, [user_requesting, user_id]);
+    const result = [...posts.rows, ...reposts.rows];
+    result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    return result;
+}
+
+export async function getTimelineDB(user_id, limit) {
+    try {
+        const postsQuery = `
         SELECT
             p.id,
             p.content,
@@ -39,10 +115,92 @@ export async function getUserPosts(user_id, user_requesting) {
             u.id AS user_id,
             u.username,
             u.profile_image,
-            COALESCE(SUM(CASE WHEN l.user_id = $1 THEN 1 ELSE 0 END), 0) AS like_count,
+            (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
+            EXISTS (SELECT 1 FROM likes WHERE post_id = p.id AND user_id = $1) AS liked,
+            p.user_id = $1 AS owned,
+            (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comments_count,
+            (SELECT COUNT(*) FROM reposts r WHERE r.post_id = p.id) AS repost_count,
+            FALSE AS repost,
+            NULL AS repost_by_me,
+            NULL AS reposter_username
+            FROM
+                posts p
+            JOIN
+                users u ON p.user_id = u.id
+            LEFT JOIN
+                likes l ON p.id = l.post_id
+            LEFT JOIN
+                comments c ON p.id = c.post_id
+            LEFT JOIN
+                reposts r ON p.id = r.post_id
+        GROUP BY
+            p.id, u.id
+        ORDER BY
+            p.created_at DESC
+        `;
+        const posts = await db.query(postsQuery, [user_id]);
+
+        const repostsQuery = `
+        SELECT
+            p.id,
+            p.content,
+            p.link,
+            COALESCE(r.created_at, p.created_at) AS created_at,
+            u.id AS user_id,
+            u.username,
+            u.profile_image,
+            (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count,
+            EXISTS (SELECT 1 FROM likes WHERE post_id = p.id AND user_id = $1) AS liked,
+            p.user_id = $1 AS owned,
+            (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comments_count,
+            (SELECT COUNT(*) FROM reposts r WHERE r.post_id = p.id) AS repost_count,
+            TRUE AS repost,
+            CASE WHEN r.user_id = $1 THEN true ELSE false END AS repost_by_me,
+            rp.username AS reposter_username
+        FROM
+            posts p
+        JOIN
+            reposts r ON p.id = r.post_id
+        JOIN
+            users u ON p.user_id = u.id
+        LEFT JOIN
+            likes l ON p.id = l.post_id
+        LEFT JOIN
+            comments c ON p.id = c.post_id
+        LEFT JOIN
+            users rp ON r.user_id = rp.id
+        GROUP BY
+            p.id, u.id, rp.username, r.created_at, r.user_id
+        ORDER BY
+            created_at DESC
+        `;
+        const reposts = await db.query(repostsQuery, [user_id]);
+        const result = [...posts.rows, ...reposts.rows];
+        result.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        return result;
+    } catch (error) {
+        console.error("Error fetching timeline:", error);
+        throw error;
+    }
+}
+
+export async function getPost(user_id, post_id) {
+    try {
+        const query = `
+        SELECT
+            p.id,
+            p.content,
+            p.link,
+            COALESCE(r.created_at, p.created_at) AS created_at,
+            u.id AS user_id,
+            u.username,
+            u.profile_image,
+            CASE WHEN r.user_id IS NOT NULL THEN rp.username ELSE u.username END AS reposter_username,
+            COUNT(l.post_id) AS like_count,
             CASE WHEN l.user_id = $1 THEN true ELSE false END AS liked,
             CASE WHEN p.user_id = $1 THEN true ELSE false END AS owned,
-            COALESCE(c.comments_count, 0) as comments_count
+            COALESCE(c.comments_count, 0) as comments_count,
+            COUNT(r.post_id) AS repost_count
         FROM
             posts p
         JOIN
@@ -54,53 +212,17 @@ export async function getUserPosts(user_id, user_requesting) {
             FROM comments
             GROUP BY post_id
         ) c ON p.id = c.post_id
+        LEFT JOIN reposts r ON p.id = r.post_id
+        LEFT JOIN users rp ON r.user_id = rp.id
         WHERE
-            p.user_id = $2
+            p.id = $2
         GROUP BY
-            p.id, p.user_id, u.id, u.username, u.profile_image, l.user_id, c.comments_count
-        ORDER BY
-            p.created_at DESC;
-    `;
-    const result = await db.query(query, [user_requesting, user_id]);
-    return result.rows;
-}
-
-export async function getTimelineDB(user_id, limit) {
-    try {
-        const query = `
-            SELECT
-                p.id,
-                p.content,
-                p.link,
-                p.created_at,
-                u.id AS user_id,
-                u.username,
-                u.profile_image,
-                COALESCE(SUM(CASE WHEN l.user_id = $1 THEN 1 ELSE 0 END), 0) AS like_count,
-                CASE WHEN l.user_id = $1 THEN true ELSE false END AS liked,
-                CASE WHEN p.user_id = $1 THEN true ELSE false END AS owned,
-                COALESCE(c.comments_count, 0) as comments_count
-            FROM
-                posts p
-            JOIN
-                users u ON p.user_id = u.id
-            LEFT JOIN
-                likes l ON p.id = l.post_id
-            LEFT JOIN (
-                SELECT post_id, COUNT(*) AS comments_count
-                FROM comments
-                GROUP BY post_id
-            ) c ON p.id = c.post_id
-            GROUP BY
-                p.id, p.user_id, u.id, u.username, u.profile_image, l.user_id, c.comments_count
-            ORDER BY
-                p.created_at DESC
-            LIMIT $2;
+            p.id, p.user_id, u.id, u.username, rp.username, rp.id, l.user_id, c.comments_count, r.created_at, r.user_id
         `;
-        const result = await db.query(query, [user_id, limit]);
-        return result.rows;
+        const result = await db.query(query, [user_id, post_id]);
+        return result.rows[0];
     } catch (error) {
-        console.error("Error fetching timeline:", error);
+        console.error("Error fetching post:", error);
         throw error;
     }
 }

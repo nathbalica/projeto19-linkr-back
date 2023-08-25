@@ -6,6 +6,7 @@ import {
     removeLike,
     checkIfLiked,
     removeHashtags,
+    sharePost
 } from "../repositories/posts.repository.js";
 import { createPostHashtags } from "./hashtags.controller.js";
 
@@ -86,6 +87,19 @@ export async function dislikeController(req, res) {
         } else {
             return res.status(409).send("Post não está curtido.");
         }
+        res.sendStatus(200);
+    } catch (error) {
+        console.error("Erro ao editar post:", error);
+        res.sendStatus(500);
+    }
+}
+
+export async function sharePostController(req, res) {
+    const { user_id } = res.locals;
+    const { post_id } = req.params;
+
+    try {
+        await sharePost(user_id, post_id);
         res.sendStatus(200);
     } catch (error) {
         console.error("Erro ao editar post:", error);

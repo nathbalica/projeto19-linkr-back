@@ -5,6 +5,7 @@ import {
     removePostController,
     likeController,
     dislikeController,
+    sharePostController
 } from "../controllers/posts.controller.js";
 import { validateAuth } from "../middlewares/auth.middlewares.js";
 import { publishPostSchema } from "../schemas/auth.schemas.js";
@@ -21,5 +22,6 @@ postsRouter.put("/edit/:post_id", validateAuth, editPostController);
 postsRouter.delete("/remove/:post_id", validateAuth, removePostController);
 postsRouter.post("/like/:post_id", validateAuth, likeController);
 postsRouter.delete("/like/:post_id", validateAuth, dislikeController);
+postsRouter.post("/repost/:post_id", validateAuth, sharePostController);
 
 export default postsRouter;

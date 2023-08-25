@@ -3,6 +3,7 @@ import {
     getUserPosts,
     searchUsers,
     getTimelineDB,
+    getPost
 } from "../repositories/users.repository.js";
 import { db } from "../database/database.connection.js";
 
@@ -48,5 +49,17 @@ export async function searchUsersController(req, res) {
         res.status(500).json({
             error: "An error occurred while searching users.",
         });
+    }
+}
+
+export async function getPostController(req, res) {
+    const { user_id } = res.locals;
+    const { post_id } = req.params;
+    try {
+        const post_data = await getPost(user_id, post_id);
+        return res.json(post_data);
+    } catch (error) {
+        console.error("Erro ao gerar timeline:", error);
+        res.sendStatus(500);
     }
 }
